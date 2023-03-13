@@ -1,124 +1,194 @@
-#include <stdint.h>
+#include <stdio.h>
+#include "stm32f401re_rcc.h"
+#include "stm32f401re_gpio.h"
 
-//Define  Logic GPIO PIN ---------------------
-#define GPIO_PIN_SET 	1
-#define GPIO_PIN_RESET 	0
-#define GPIO_PIN_LOW	0
-#define GPIO_PIN_HIGH	1
+//Define Logic GPIO_PIN--------------------------------------------------------
+#define GPIO_PIN_SET 				     1
+#define GPIO_PIN_RESET 				     0
+#define GPIO_PIN_LOW 				     0
+#define GPIO_PIN_HIGH 				     1
 
-//define GPIO PIN ------
-#define LED_GPIO_PORT	GPIOA
-#define LED_GPIO_PIN	GPIP_Pin_5
-#define LED_PIN5	5
-#define LEDControl_SetClock		RCC_AHB1Periph_GPIOA
+//Define GPIO_PIN--------------------------------------------------------------
+#define LED_GPIO_PORT				     GPIOA
+#define LED_GPIO_PIN                     GPIO_Pin_5
+#define LED_PIN5                         5
+#define LEDControl_SetClock			     RCC_AHB1Periph_GPIOA
 
-#define BUTTON_GPIO_PORT	GPIOC
-#define BUTTON_GPIO_PIN		GPIO_Pin_13
-#define BUTTON_PIN13		13
-#define BUTTONControl_SetClock 	RCC_AHB1Periph_GPIOC
+#define BUTTON_GPIO_PORT			     GPIOC
+#define BUTTON_GPIO_PIN			         GPIO_Pin_13
+#define BUTTON_PIN13				     13
+#define BUTTONControl_SetClock		     RCC_AHB1Periph_GPIOC
 
-static
-void Led_Init(void)
+
+//function declaration---------------------------------------------------------
+static void LedControl_SetStatus(GPIO_TypeDef * GPIOx,uint8_t GPIO_PIN, uint8_t Status);
+static void Delay(uint32_t ms);
+static uint8_t ButtonRead_Status(GPIO_TypeDef * GPIOx, uint32_t GPIO_PIN);
+static void Button_Init(void);
+static void Led_Init(void);
+static void AppInitCommon(void);
+
+//-----------------------------------------------------------------------------
+int main(void)
 {
 
-	//0eclare type variable GPIO Struct-
-	GPIO_InitTypeDef GPIO_InitStructure;
+	AppInitCommon();
 
-	//Enable Clock GPTOA--
-	RCC_AHB1PeriphClockCmd(LEDControl_SetClock, ENABLE);
+	while(1)
+	{
+		//Turn on the Led when pressing the button----------------------------
+		if (ButtonRead_Status(BUTTON_GPIO_PORT, BUTTON_PIN13) == GPIO_PIN_LOW)
+		{
+			Delay(5);
+			LedControl_SetStatus (LED_GPIO_PORT, LED_PIN5, GPIO_PIN_SET);
+		}
 
-
-	//Choose Pin Led-' -
-	GPIO_InitStructure.GPIO_Pin = LED_GPIO_PIN;
-
-	//Choose Pin Led as Out-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-
-	//Choose Speed Pin-
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-	//Select type-' -
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-
-	//Select status
-	GPIO_InitStructure.GPIO_PuPd = GPTO PuPd_DOWN ;
-
-	//The function initializes all of the above values--
-	GPIO_Init(LED_GPIO_PORT, &GPIO_InitStructure);
-
+		//Turn off the led when pressing the button---------------------------
+		else
+		{
+			LedControl_SetStatus (LED_GPIO_PORT, LED_PIN5, GPIO_PIN_RESET);
+		}
+	}
 }
 
-//Chan PC13 dieu khien button *****
-
+/**
+ * @func   Initializes
+ * @brief  Initializes All Periperal
+ * @param  None
+ * @retval None
+ */
 static
-void Button_Init(void)
+void AppInitCommon(void)
 {
-	//0eclare type variable GPIO Struc-
-	GPIO_InitTypeDef GPIO_InitStructure ;
+	//System Init--------------------------------------------------------------
+	SystemCoreClockUpdate();
 
-	//Enable Clock GPI0C--
-	RCC_AHB1PeriphClockCmd(BUTTONControl_SetClock, ENABLE);
+	//Button Init--------------------------------------------------------------
+	Button_Init();
 
-	//Choose Pin BUTTON--
-	GPIO_InitStructure.GPIO_Pin = BUTTON_GPIO_PIN;
-
-	//Choose Pin Led as Input--
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-
-	//Choose Speed Pin-
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-	//Select status -
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-
-	//The function initializes a11 of the above values
-	GPIO_Init(BUTTON_GPIO_PORT, &GP10_InitStructure);
+	//Led Init-----------------------------------------------------------------
+	Led_Init();
 }
 
-//Dieu  khien LED  thanh ghi
+/**
+ * @func   LedControl_SetStatus
+ * @brief  Control Turn on or Turn off Led
+ * @param  None
+ * @retval None
+ */
 static
 void LedControl_SetStatus(GPIO_TypeDef * GPIOx, uint8_t GPIO_PIN, uint8_t Status)
 {
-//	Set bit in BSRR Register
-	if(Status == GPIO_PIN_SET){
+
+	//Set bit in BSRR Registers------------------------------------------------
+	if (Status == GPIO_PIN_SET)
+	{
 		GPIOx->BSRRL |= 1 << GPIO_PIN;
 	}
-//	Reset bit in BSRR Register
-	if(Status == GPIO_PIN_RESET){
+	//Reset bit in BSRR Registers----------------------------------------------
+	if (Status == GPIO_PIN_RESET)
+	{
 		GPIOx->BSRRH |= 1 << GPIO_PIN;
 	}
 }
 
-//Read Button Value
+/**
+ * @func   ButtonRead_Status
+ * @brief  Read Status Button
+ * @param  None
+ * @retval None
+ */
 static
 uint8_t ButtonRead_Status(GPIO_TypeDef * GPIOx, uint32_t GPIO_PIN)
 {
 	uint32_t Read_Pin;
-//	Read bit in IDR register
+
+	//Read bit in IDR Registers------------------------------------------------
 	Read_Pin = (GPIOx->IDR) >> GPIO_PIN;
 	Read_Pin = Read_Pin & 0x01;
 
 	return Read_Pin;
 }
 
-int main(void)
+/**
+ * @func   Delay
+ * @brief  Delay Time
+ * @param  None
+ * @retval None
+ */
+static
+void Delay(uint32_t ms)
 {
-    // Initialize the LED and button pins
-    Led_Init();
-    Button_Init();
-
-    // Loop forever
-    while(1)
-    {
-        // Read the button state
-        uint8_t buttonState = ButtonRead_Status(BUTTON_GPIO_PORT, BUTTON_PIN13);
-
-        // Toggle the LED state if the button is pressed
-        if(buttonState == GPIO_PIN_RESET)
-        {
-            static uint8_t ledState = GPIO_PIN_RESET; // Static variable to keep track of the LED state
-            ledState = (ledState == GPIO_PIN_RESET) ? GPIO_PIN_SET : GPIO_PIN_RESET; // Toggle the LED state
-            LedControl_SetStatus(LED_GPIO_PORT, LED_PIN5, ledState);
-        }
-    }
+	uint32_t i,j;
+	for (i = 0 ; i < ms ; i ++)
+	{
+		for (j = 0; j<5000; j++){;}
+	}
 }
+
+/**
+ * @func   Led_Init
+ * @brief  Initializes GPIO Use Led
+ * @param  None
+ * @retval None
+ */
+static
+void Led_Init(void)
+{
+	//Declare type variable GPIO Struct----------------------------------------
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	//Enable Clock GPIOA-------------------------------------------------------
+	RCC_AHB1PeriphClockCmd(LEDControl_SetClock, ENABLE);
+
+	//Choose Pin Led-----------------------------------------------------------
+	GPIO_InitStructure.GPIO_Pin = LED_GPIO_PIN;
+
+	//Choose Pin Led as Out----------------------------------------------------
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+
+	//Choose Speed Pin---------------------------------------------------------
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+	//Select type--------------------------------------------------------------
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+
+	//Select status------------------------------------------------------------
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN ;
+
+	//The function initializes all of the above values-------------------------
+	GPIO_Init(LED_GPIO_PORT, &GPIO_InitStructure);
+}
+
+/**
+ * @func   ButtonInit
+ * @brief  Initializes GPIO Use Button
+ * @param  None
+ * @retval None
+ */
+static
+void Button_Init(void)
+{
+	//Declare type variable GPIO Struc-----------------------------------------
+	GPIO_InitTypeDef GPIO_InitStructure ;
+
+	//Enable Clock GPIOC-------------------------------------------------------
+	RCC_AHB1PeriphClockCmd(BUTTONControl_SetClock, ENABLE);
+
+	//Choose Pin BUTTON--------------------------------------------------------
+	GPIO_InitStructure.GPIO_Pin = BUTTON_GPIO_PIN;
+
+	//Choose Pin Led as Input--------------------------------------------------
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+
+	//Choose Speed Pin---------------------------------------------------------
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+	//Select status------------------------------------------------------------
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+
+	//The function initializes all of the above values-------------------------
+	GPIO_Init(BUTTON_GPIO_PORT, &GPIO_InitStructure);
+}
+
+/* END_FILE */

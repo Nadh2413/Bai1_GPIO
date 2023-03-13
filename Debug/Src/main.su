@@ -1,0 +1,7 @@
+../Src/main.c:32:5:main	8	static
+../Src/main.c:61:6:AppInitCommon	8	static
+../Src/main.c:80:6:LedControl_SetStatus	16	static
+../Src/main.c:102:9:ButtonRead_Status	24	static
+../Src/main.c:120:6:Delay	24	static
+../Src/main.c:136:6:Led_Init	16	static
+../Src/main.c:170:6:Button_Init	16	static
